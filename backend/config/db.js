@@ -27,11 +27,17 @@ const initDB = async () => {
       )
     `);
 
-    // Trainees Table
+    // Trainees Table (Digital Resume Ready)
     await connection.query(`
       CREATE TABLE IF NOT EXISTS trainees (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
+        age INT,
+        training_area VARCHAR(255),
+        skills_learned TEXT,
+        progress_percentage INT DEFAULT 0,
+        supervisor_rating FLOAT DEFAULT 0,
+        supervisor_remarks TEXT,
         group_name VARCHAR(255),
         efficiency VARCHAR(50),
         status VARCHAR(50)

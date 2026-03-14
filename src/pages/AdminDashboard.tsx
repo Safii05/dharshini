@@ -20,7 +20,9 @@ import {
   Calendar,
   Clock,
   X,
-  Trash2
+  Trash2,
+  Star,
+  Award
 } from 'lucide-react';
 import { 
   Chart as ChartJS, 
@@ -149,6 +151,7 @@ const AdminDashboard = ({ onLogout }: Props) => {
   const menuItems = [
     { id: 'dashboard', label: t.dashboard, icon: LayoutDashboard },
     { id: 'trainees', label: t.trainees, icon: Users },
+    { id: 'traineeSkillTracking', label: 'Skill Tracking & Placement', icon: Briefcase },
     { id: 'farmTask', label: t.farmTask, icon: ClipboardList },
     { id: 'cropMonitoring', label: t.cropMonitoring, icon: Eye },
     { id: 'attendanceProduction', label: t.attendance, icon: Calendar },
@@ -276,6 +279,7 @@ const AdminDashboard = ({ onLogout }: Props) => {
     >
       {activePage === 'dashboard' && <AdminDashboardHome stats={computedStats} qrSession={qrSession} onGenerateQR={handleGenerateQR} analytics={attendanceAnalytics} />}
       {activePage === 'trainees' && <TraineesSection data={trainees} onAddTrainee={handleAddTrainee} onDeleteTrainee={handleDeleteTrainee} />}
+      {activePage === 'traineeSkillTracking' && <TraineeSkillTrackingSection data={trainees} onAddTrainee={handleAddTrainee} />}
       {activePage === 'farmTask' && <FarmTaskSection data={tasks} trainees={trainees} onUpdateTask={handleUpdateTaskStatus} onAddTask={handleAddTask} onDeleteTask={handleDeleteTask} />}
       {activePage === 'cropMonitoring' && <CropMonitoringSection data={crops} onAddCrop={handleAddCrop} onDeleteCrop={handleDeleteCrop} />}
       {activePage === 'attendanceProduction' && <AttendanceProductionSection qrSession={qrSession} onGenerateQR={handleGenerateQR} analytics={attendanceAnalytics} />}
@@ -1054,6 +1058,274 @@ const CropMonitoringSection = ({ data, onAddCrop, onDeleteCrop }: any) => {
                 </p>
               </div>
               <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>Add to Monitoring</button>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const TraineeSkillTrackingSection = ({ data, onAddTrainee }: any) => {
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedSkill, setSelectedSkill] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    age: '',
+    training_area: 'Organic Farming',
+    skills_learned: '',
+    progress_percentage: 0,
+    supervisor_rating: 5,
+    supervisor_remarks: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onAddTrainee({
+      ...formData,
+      status: 'Active',
+      efficiency: `${formData.progress_percentage}%`,
+      group_name: formData.training_area
+    });
+    setIsFormOpen(false);
+    setFormData({
+      name: '',
+      age: '',
+      training_area: 'Organic Farming',
+      skills_learned: '',
+      progress_percentage: 0,
+      supervisor_rating: 5,
+      supervisor_remarks: ''
+    });
+  };
+
+  const filteredTrainees = selectedSkill 
+    ? data.filter((t: any) => t.skills_learned?.toLowerCase().includes(selectedSkill.toLowerCase()) || t.training_area === selectedSkill)
+    : data;
+
+  const getInitials = (name: string) => name.split(' ').map((n: any) => n[0]).join('').toUpperCase();
+
+  return (
+    <div className="fade-in">
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(350px, 1fr) 2fr', gap: '2rem' }}>
+        
+        {/* Left Column: Management & Search */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          
+          <div className="card shadow-lg bg-emerald-50 border-emerald-100">
+            <h3 className="text-xl font-black mb-4 flex items-center gap-2 text-emerald-900">
+              <Award className="text-emerald-500" /> Trainee Management
+            </h3>
+            <p className="text-emerald-700 text-sm mb-6 font-medium">Capture comprehensive skill data and track progress for professional certification.</p>
+            <button 
+              className="btn btn-primary w-full" 
+              onClick={() => setIsFormOpen(true)}
+              style={{ background: '#059669', boxShadow: '0 4px 6px -1px rgba(5, 150, 105, 0.4)' }}
+            >
+              Open Supervisor Form
+            </button>
+          </div>
+
+          <div className="card shadow-lg">
+            <h3 className="text-lg font-black mb-6 flex items-center gap-2">
+              <Search className="text-primary" /> Employer Requirement
+            </h3>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Required Skill Set</label>
+              <select 
+                className="input w-full" 
+                value={selectedSkill}
+                onChange={(e) => setSelectedSkill(e.target.value)}
+                style={{ borderRadius: '1rem', fontWeight: 700 }}
+              >
+                <option value="">All Candidates</option>
+                <option value="Organic Farming">Organic Farming</option>
+                <option value="Irrigation">Irrigation Handling</option>
+                <option value="Crop Monitoring">Crop Monitoring</option>
+                <option value="Compost Preparation">Compost Preparation</option>
+                <option value="Pest Control">Pest Control</option>
+              </select>
+            </div>
+            <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
+              <p className="text-xs text-slate-500 italic">Selecting a skill will filter the trainee pool for specialized placement recommendations.</p>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Right Column: Recommendations */}
+        <div>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className="text-2xl font-black text-slate-900">Recommended Trainees</h3>
+            <span className="badge badge-success px-4 py-2" style={{ fontSize: '0.75rem' }}>{filteredTrainees.length} Matches Found</span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+            {filteredTrainees.map((trainee: any) => (
+              <div key={trainee.id} className="card shadow-sm hover:shadow-xl transition-all duration-300 border-l-4 border-l-emerald-500" style={{ padding: '1.5rem', background: 'white' }}>
+                <div className="flex items-start justify-between mb-4">
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div className="avatar" style={{ width: '48px', height: '48px', background: '#f0fdf4', color: '#10b981', fontSize: '1.25rem' }}>
+                      {getInitials(trainee.name)}
+                    </div>
+                    <div>
+                      <h4 className="font-black text-slate-900 leading-none mb-1">{trainee.name}</h4>
+                      <p className="text-xs font-bold text-slate-400">{trainee.training_area || "Srishti Trainee"}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100">
+                    <Star size={12} className="fill-amber-400 text-amber-400" />
+                    <span className="text-xs font-black text-amber-700">{trainee.supervisor_rating || 5}</span>
+                  </div>
+                </div>
+
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">Training Progress</span>
+                    <span className="text-xs font-black text-emerald-600">{trainee.progress_percentage || trainee.efficiency || 0}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${trainee.progress_percentage || parseInt(trainee.efficiency) || 0}%` }}></div>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-2 block">Certifications & Skills</span>
+                  <div className="flex flex-wrap gap-1">
+                    {(trainee.skills_learned || "Farming Basics").split(',').map((skill: string, idx: number) => (
+                      <span key={idx} className="bg-slate-100 text-slate-600 text-[9px] font-black px-2 py-1 rounded-md border border-slate-200 uppercase letter-spacing-tight">
+                        {skill.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <button className="btn btn-outline w-full py-2 text-xs font-black uppercase tracking-widest border-2">
+                   View Full Profile
+                </button>
+              </div>
+            ))}
+          </div>
+          
+          {filteredTrainees.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '100px 20px', background: '#f8fafc', borderRadius: '1.5rem', border: '2px dashed #e2e8f0' }}>
+               <Search className="mx-auto mb-4 text-slate-300" size={48} />
+               <p className="font-black text-slate-400">No trainees found matching the selected requirement.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Supervisor Form Modal */}
+      {isFormOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', zIndex: 4000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', backdropFilter: 'blur(8px)' }}>
+          <div className="card shadow-2xl fade-in" style={{ width: '100%', maxWidth: '600px', padding: '2.5rem', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+              <div>
+                <h3 className="text-2xl font-black text-slate-900 mb-1">Trainee Progress Form</h3>
+                <p className="text-sm font-medium text-slate-500">Official Skill Assessment & Employment Record</p>
+              </div>
+              <button onClick={() => setIsFormOpen(false)} style={{ background: '#f1f5f9', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={24} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div>
+                  <label className="text-xs font-black text-slate-400 uppercase mb-2 block tracking-widest">Trainee Name</label>
+                  <input 
+                    className="input w-full" 
+                    placeholder="Full Name" 
+                    required 
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-black text-slate-400 uppercase mb-2 block tracking-widest">Age</label>
+                  <input 
+                    className="input w-full" 
+                    type="number" 
+                    placeholder="e.g. 24" 
+                    required 
+                    value={formData.age}
+                    onChange={(e) => setFormData({...formData, age: e.target.value})}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div>
+                  <label className="text-xs font-black text-slate-400 uppercase mb-2 block tracking-widest">Training Area</label>
+                  <select 
+                    className="input w-full" 
+                    value={formData.training_area}
+                    onChange={(e) => setFormData({...formData, training_area: e.target.value})}
+                  >
+                    <option>Organic Farming</option>
+                    <option>Irrigation</option>
+                    <option>Crop Monitoring</option>
+                    <option>Compost Preparation</option>
+                    <option>Poultry Management</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-black text-slate-400 uppercase mb-2 block tracking-widest">Supervisor Rating (1-10)</label>
+                  <div className="flex items-center gap-2">
+                     <input 
+                       type="range" 
+                       min="1" 
+                       max="10" 
+                       className="flex-1 accent-amber-500"
+                       value={formData.supervisor_rating}
+                       onChange={(e) => setFormData({...formData, supervisor_rating: parseInt(e.target.value)})}
+                     />
+                     <span className="font-black text-amber-600 bg-amber-50 px-3 py-1 rounded-lg border border-amber-100">{formData.supervisor_rating}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-slate-400 uppercase mb-2 block tracking-widest">Skills Learned (Comma separated)</label>
+                <textarea 
+                  className="input w-full" 
+                  rows={2} 
+                  placeholder="e.g. Irrigation Handling, Seed Sowing, Organic Fertilizer Prep"
+                  value={formData.skills_learned}
+                  onChange={(e) => setFormData({...formData, skills_learned: e.target.value})}
+                ></textarea>
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
+                <div className="flex justify-between items-center mb-4">
+                   <label className="text-xs font-black text-slate-900 uppercase tracking-widest">Training Progress</label>
+                   <span className="font-black text-primary text-xl">{formData.progress_percentage}%</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  className="w-full accent-primary h-2 bg-slate-200 rounded-lg" 
+                  value={formData.progress_percentage}
+                  onChange={(e) => setFormData({...formData, progress_percentage: parseInt(e.target.value)})}
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-slate-400 uppercase mb-2 block tracking-widest">Supervisor Remarks</label>
+                <textarea 
+                  className="input w-full" 
+                  rows={3} 
+                  placeholder="Detailed observations about trainee's performance and attitude..."
+                  value={formData.supervisor_remarks}
+                  onChange={(e) => setFormData({...formData, supervisor_remarks: e.target.value})}
+                ></textarea>
+              </div>
+
+              <button type="submit" className="btn btn-primary w-full py-4" style={{ background: '#0f172a', fontWeight: 900 }}>
+                Generate Digital Profile & Safe
+              </button>
             </form>
           </div>
         </div>

@@ -34,19 +34,39 @@ router.get('/trainees', async (req, res) => {
 });
 
 router.post('/trainees', async (req, res) => {
-  const { name, group_name, efficiency, status } = req.body;
+  const { name, age, training_area, skills_learned, progress_percentage, supervisor_rating, supervisor_remarks, group_name, efficiency, status } = req.body;
   try {
-    const [result] = await pool.query('INSERT INTO trainees (name, group_name, efficiency, status) VALUES (?, ?, ?, ?)', [name, group_name, efficiency, status]);
-    res.json({ id: result.insertId, name, group_name, efficiency, status });
+    const [result] = await pool.query(
+      'INSERT INTO trainees (name, age, training_area, skills_learned, progress_percentage, supervisor_rating, supervisor_remarks, group_name, efficiency, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', 
+      [name, age, training_area, skills_learned, progress_percentage, supervisor_rating, supervisor_remarks, group_name, efficiency, status]
+    );
+    res.json({ id: result.insertId, ...req.body });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/trainees/bulk', async (req, res) => {
+  const trainees = req.body;
+  try {
+    const values = trainees.map(t => [t.name, t.age, t.training_area, t.skills_learned, t.progress_percentage, t.supervisor_rating, t.supervisor_remarks, t.group_name, t.efficiency, t.status]);
+    const [result] = await pool.query(
+      'INSERT INTO trainees (name, age, training_area, skills_learned, progress_percentage, supervisor_rating, supervisor_remarks, group_name, efficiency, status) VALUES ?', 
+      [values]
+    );
+    res.json({ success: true, count: result.affectedRows });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
 router.put('/trainees/:id', async (req, res) => {
-  const { name, group_name, efficiency, status } = req.body;
+  const { name, age, training_area, skills_learned, progress_percentage, supervisor_rating, supervisor_remarks, group_name, efficiency, status } = req.body;
   try {
-    await pool.query('UPDATE trainees SET name = ?, group_name = ?, efficiency = ?, status = ? WHERE id = ?', [name, group_name, efficiency, status, req.params.id]);
+    await pool.query(
+      'UPDATE trainees SET name = ?, age = ?, training_area = ?, skills_learned = ?, progress_percentage = ?, supervisor_rating = ?, supervisor_remarks = ?, group_name = ?, efficiency = ?, status = ? WHERE id = ?', 
+      [name, age, training_area, skills_learned, progress_percentage, supervisor_rating, supervisor_remarks, group_name, efficiency, status, req.params.id]
+    );
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -1,9 +1,9 @@
 export const traineesData = [
-  { id: 1, name: "Arun Kumar", group: "Morning A", efficiency: "92%", status: "Active" },
-  { id: 2, name: "Priya S.", group: "Evening B", efficiency: "88%", status: "On Leave" },
-  { id: 3, name: "Karthik R.", group: "Morning A", efficiency: "95%", status: "Active" },
-  { id: 4, name: "Lakshmi M.", group: "Morning B", efficiency: "79%", status: "Training" },
-  { id: 5, name: "Rahul Dev", group: "Evening B", efficiency: "91%", status: "Active" },
+  { id: 1, name: "Arun Kumar", age: 24, training_area: "Organic Farming", skills_learned: "Seed Sowing, Compost Prep, Irrigation", progress_percentage: 92, supervisor_rating: 9, efficiency: "92%", status: "Active" },
+  { id: 2, name: "Priya S.", age: 22, training_area: "Crop Monitoring", skills_learned: "Pest Identification, Drone Op", progress_percentage: 88, supervisor_rating: 8, efficiency: "88%", status: "On Leave" },
+  { id: 3, name: "Karthik R.", age: 26, training_area: "Irrigation", skills_learned: "Drip System Repair, Water Scheduling", progress_percentage: 95, supervisor_rating: 10, efficiency: "95%", status: "Active" },
+  { id: 4, name: "Lakshmi M.", age: 23, training_area: "Organic Farming", skills_learned: "Natural Fertilizers", progress_percentage: 79, supervisor_rating: 7, efficiency: "79%", status: "Training" },
+  { id: 5, name: "Rahul Dev", age: 25, training_area: "Compost Preparation", skills_learned: "Waste Segregation, Bokashi", progress_percentage: 91, supervisor_rating: 9, efficiency: "91%", status: "Active" },
 ];
 
 export const tasksData = [
