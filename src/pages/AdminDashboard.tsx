@@ -72,6 +72,11 @@ const AdminDashboard = ({ onLogout }: Props) => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [crops, setCrops] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, type: 'trainee' | 'task', id: number | null }>({
+    isOpen: false,
+    type: 'trainee',
+    id: null
+  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -153,27 +158,33 @@ const AdminDashboard = ({ onLogout }: Props) => {
     }
   };
 
-  const handleDeleteTrainee = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this trainee?')) return;
-    try {
-      await deleteTrainee(id);
-      setTrainees(trainees.filter(t => t.id !== id));
-    } catch (err) {
-      console.error("Failed to delete trainee", err);
-      // Optimistic delete for demo
-      setTrainees(trainees.filter(t => t.id !== id));
-    }
+  const handleDeleteTrainee = (id: number) => {
+    setDeleteModal({ isOpen: true, type: 'trainee', id });
   };
 
-  const handleDeleteTask = async (id: number) => {
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
+  const handleDeleteTask = (id: number) => {
+    setDeleteModal({ isOpen: true, type: 'task', id });
+  };
+
+  const confirmDelete = async () => {
+    const { type, id } = deleteModal;
+    if (id === null) return;
+
     try {
-      await deleteTask(id);
-      setTasks(tasks.filter(t => t.id !== id));
+      if (type === 'trainee') {
+        await deleteTrainee(id);
+        setTrainees(trainees.filter(t => t.id !== id));
+      } else {
+        await deleteTask(id);
+        setTasks(tasks.filter(t => t.id !== id));
+      }
     } catch (err) {
-      console.error("Failed to delete task", err);
-      // Optimistic delete for demo
-      setTasks(tasks.filter(t => t.id !== id));
+      console.error(`Failed to delete ${type}`, err);
+      // Optimistic delete for demo/fallback
+      if (type === 'trainee') setTrainees(trainees.filter(t => t.id !== id));
+      else setTasks(tasks.filter(t => t.id !== id));
+    } finally {
+      setDeleteModal({ isOpen: false, type: 'trainee', id: null });
     }
   };
 
@@ -200,6 +211,37 @@ const AdminDashboard = ({ onLogout }: Props) => {
       {activePage === 'inventory' && <InventorySection data={inventory} />}
       {activePage === 'reports' && <ReportsSection />}
       {activePage === 'settings' && <AdminSettingsSection />}
+
+      {/* Global Delete Confirmation Modal */}
+      {deleteModal.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', backdropFilter: 'blur(4px)' }}>
+          <div className="card shadow-2xl fade-in" style={{ width: '100%', maxWidth: '400px', padding: '2rem', textAlign: 'center' }}>
+            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#fee2e2', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+              <AlertCircle size={32} />
+            </div>
+            <h3 className="font-black text-xl mb-2">Confirm Delete</h3>
+            <p className="text-slate-500 mb-8">
+              Are you sure you want to delete this {deleteModal.type}? This action cannot be undone and will permanently remove the record from the database.
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <button 
+                className="btn-outline" 
+                onClick={() => setDeleteModal({ ...deleteModal, isOpen: false })}
+                style={{ padding: '0.75rem' }}
+              >
+                Cancel
+              </button>
+              <button 
+                className="btn" 
+                onClick={confirmDelete}
+                style={{ background: '#ef4444', color: 'white', padding: '0.75rem' }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 };
