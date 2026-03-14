@@ -34,6 +34,7 @@ export const addInventory = (data: any) => api.post('/inventory', data);
 export const getReports = () => api.get('/reports');
 export const deleteTrainee = (id: number) => api.delete(`/trainees/${id}`);
 export const deleteTask = (id: number) => api.delete(`/tasks/${id}`);
+export const deleteCrop = (id: number) => api.delete(`/crops/${id}`);
 
 // Attendance QR & Analytics
 export const generateAttendanceSession = () => api.post('/attendance/session');

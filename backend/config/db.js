@@ -58,9 +58,22 @@ const initDB = async () => {
         name VARCHAR(255) NOT NULL,
         stage VARCHAR(255),
         health VARCHAR(255),
-        type VARCHAR(255)
+        type VARCHAR(255),
+        image VARCHAR(1000)
       )
     `);
+
+    // Seed Crops if empty
+    const [cropRows] = await connection.query('SELECT count(*) as count FROM crops');
+    if (cropRows[0].count === 0) {
+      await connection.query(`
+        INSERT INTO crops (name, stage, health, type, image) VALUES 
+        ('Tomatoes', 'Flowering', 'Healthy', 'Vegetable', '/crops/tomato.png'),
+        ('Green Chillies', 'Harvesting', 'Healthy', 'Vegetable', '/crops/chilli.png'),
+        ('Eggplant', 'Fruiting', 'At Risk', 'Vegetable', '/crops/eggplant.png'),
+        ('Cabbage', 'Growth', 'Healthy', 'Vegetable', '/crops/cabbage.png')
+      `);
+    }
 
     // Attendance Sessions Table
     await connection.query(`

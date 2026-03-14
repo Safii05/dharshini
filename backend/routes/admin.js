@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { pool } = require('../config/db');
 const { addSession } = require('../config/sessionStore');
+const { getCrops: getCropsMem, addCrop: addCropMem, deleteCrop: deleteCropMem } = require('../config/cropStore');
 
 // Dashboard Statistics
 router.get('/dashboard', async (req, res) => {
@@ -104,19 +105,37 @@ router.delete('/tasks/:id', async (req, res) => {
 router.get('/crops', async (req, res) => {
   try {
     const [rows] = await pool.query('SELECT * FROM crops');
-    res.json(rows);
+    res.json(rows.length > 0 ? rows : getCropsMem());
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.warn("Crops DB failure fallback to memory", err.message);
+    res.json(getCropsMem());
   }
 });
 
 router.post('/crops', async (req, res) => {
-  const { name, stage, health, type } = req.body;
+  const { name, stage, health, type, image } = req.body;
   try {
-    const [result] = await pool.query('INSERT INTO crops (name, stage, health, type) VALUES (?, ?, ?, ?)', [name, stage, health, type]);
-    res.json({ id: result.insertId, name, stage, health, type });
+    const [result] = await pool.query('INSERT INTO crops (name, stage, health, type, image) VALUES (?, ?, ?, ?, ?)', [name, stage, health, type, image]);
+    const newCrop = { id: result.insertId, name, stage, health, type, image };
+    addCropMem(newCrop); // Keep in sync
+    res.json(newCrop);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.warn("Add Crop DB failure fallback to memory", err.message);
+    const newCrop = addCropMem({ name, stage, health, type, image });
+    res.json(newCrop);
+  }
+});
+
+router.delete('/crops/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM crops WHERE id = ?', [id]);
+    deleteCropMem(id);
+    res.json({ success: true });
+  } catch (err) {
+    console.warn("Delete Crop DB failure fallback to memory", err.message);
+    const success = deleteCropMem(id);
+    res.json({ success });
   }
 });
 

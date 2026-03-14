@@ -56,6 +56,8 @@ import {
   deleteTask, 
   getCrops, 
   getInventory,
+  addCrop,
+  deleteCrop,
   generateAttendanceSession,
   getAttendanceAnalytics 
 } from '../services/api';
@@ -86,7 +88,7 @@ const AdminDashboard = ({ onLogout }: Props) => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [crops, setCrops] = useState<any[]>([]);
   const [inventory, setInventory] = useState<any[]>([]);
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, type: 'trainee' | 'task', id: number | null }>({
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, type: 'trainee' | 'task' | 'crop', id: number | null }>({
     isOpen: false,
     type: 'trainee',
     id: null
@@ -183,12 +185,28 @@ const AdminDashboard = ({ onLogout }: Props) => {
     }
   };
 
+  const handleAddCrop = async (crop: any) => {
+    try {
+      const res = await addCrop(crop);
+      const newCrop = res.data;
+      setCrops([...crops, newCrop]);
+    } catch (err) {
+      console.error("Failed to add crop", err);
+      const id = Math.max(0, ...crops.map(c => c.id || 0)) + 1;
+      setCrops([...crops, { ...crop, id }]);
+    }
+  };
+
   const handleDeleteTrainee = (id: number) => {
     setDeleteModal({ isOpen: true, type: 'trainee', id });
   };
 
   const handleDeleteTask = (id: number) => {
     setDeleteModal({ isOpen: true, type: 'task', id });
+  };
+
+  const handleDeleteCrop = (id: number) => {
+    setDeleteModal({ isOpen: true, type: 'crop', id });
   };
 
   const confirmDelete = async () => {
@@ -199,15 +217,19 @@ const AdminDashboard = ({ onLogout }: Props) => {
       if (type === 'trainee') {
         await deleteTrainee(id);
         setTrainees(trainees.filter(t => t.id !== id));
-      } else {
+      } else if (type === 'task') {
         await deleteTask(id);
         setTasks(tasks.filter(t => t.id !== id));
+      } else {
+        await deleteCrop(id);
+        setCrops(crops.filter(c => c.id !== id));
       }
     } catch (err) {
       console.error(`Failed to delete ${type}`, err);
       // Optimistic delete for demo/fallback
       if (type === 'trainee') setTrainees(trainees.filter(t => t.id !== id));
-      else setTasks(tasks.filter(t => t.id !== id));
+      else if (type === 'task') setTasks(tasks.filter(t => t.id !== id));
+      else setCrops(crops.filter(c => c.id !== id));
     } finally {
       setDeleteModal({ isOpen: false, type: 'trainee', id: null });
     }
@@ -241,7 +263,7 @@ const AdminDashboard = ({ onLogout }: Props) => {
       {activePage === 'dashboard' && <AdminDashboardHome stats={computedStats} qrSession={qrSession} onGenerateQR={handleGenerateQR} analytics={attendanceAnalytics} />}
       {activePage === 'trainees' && <TraineesSection data={trainees} onAddTrainee={handleAddTrainee} onDeleteTrainee={handleDeleteTrainee} />}
       {activePage === 'farmTask' && <FarmTaskSection data={tasks} trainees={trainees} onUpdateTask={handleUpdateTaskStatus} onAddTask={handleAddTask} onDeleteTask={handleDeleteTask} />}
-      {activePage === 'cropMonitoring' && <CropMonitoringSection data={crops} />}
+      {activePage === 'cropMonitoring' && <CropMonitoringSection data={crops} onAddCrop={handleAddCrop} onDeleteCrop={handleDeleteCrop} />}
       {activePage === 'attendanceProduction' && <AttendanceProductionSection qrSession={qrSession} onGenerateQR={handleGenerateQR} analytics={attendanceAnalytics} />}
       {activePage === 'inventory' && <InventorySection data={inventory} />}
       {activePage === 'reports' && <ReportsSection />}
@@ -883,28 +905,140 @@ const FarmTaskSection = ({ data, trainees, onUpdateTask, onAddTask, onDeleteTask
   );
 };
 
-const CropMonitoringSection = ({ data }: any) => {
+const CropMonitoringSection = ({ data, onAddCrop, onDeleteCrop }: any) => {
   const { t } = useTranslation();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newCrop, setNewCrop] = useState({ name: '', stage: 'Growth', health: 'Healthy', type: 'Vegetable' });
+
+  const cropImageMap: Record<string, string> = {
+    'tomato': '/crops/tomato.png',
+    'chilli': '/crops/chilli.png',
+    'eggplant': '/crops/eggplant.png',
+    'brinjal': '/crops/eggplant.png',
+    'cabbage': '/crops/cabbage.png',
+  };
+
+  const getAutoImage = (name: string) => {
+    const lowerName = name.toLowerCase();
+    for (const [key, value] of Object.entries(cropImageMap)) {
+      if (lowerName.includes(key)) return value;
+    }
+    return ''; // Placeholder
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const autoImage = getAutoImage(newCrop.name);
+    onAddCrop({ ...newCrop, image: autoImage });
+    setIsModalOpen(false);
+    setNewCrop({ name: '', stage: 'Growth', health: 'Healthy', type: 'Vegetable' });
+  };
+
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
-      {data.map((crop: any, i: number) => (
-        <div key={i} className="card">
-          <div style={{ height: '120px', background: '#f8fafc', borderRadius: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>
-             <Sprout size={48} />
-          </div>
-          <h4 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '1rem' }}>{crop.name}</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.875rem' }}>
-             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-               <span style={{ color: 'var(--text-muted)' }}>{t.growthStage}</span>
-               <span style={{ fontWeight: 700 }}>{crop.stage}</span>
-             </div>
-             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-               <span style={{ color: 'var(--text-muted)' }}>Health</span>
-               <span className={`badge ${crop.health === 'Healthy' ? 'badge-success' : 'badge-danger'}`}>{crop.health}</span>
-             </div>
+    <div className="fade-in">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+        <h2 className="text-2xl font-black">{t.cropMonitoring}</h2>
+        <button className="btn btn-primary" onClick={() => setIsModalOpen(true)} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Plus size={20} />
+          Add Crop
+        </button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+        {data.map((crop: any, i: number) => {
+          // Use stored image or try to auto-map if missing (for legacy data)
+          const displayImage = crop.image || getAutoImage(crop.name);
+          
+          return (
+            <div key={crop.id || i} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ height: '180px', position: 'relative', overflow: 'hidden' }}>
+                {displayImage ? (
+                  <img src={displayImage} alt={crop.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#cbd5e1' }}>
+                    <Sprout size={64} />
+                  </div>
+                )}
+                <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+                  <button 
+                    onClick={() => onDeleteCrop(crop.id)}
+                    style={{ background: 'rgba(255,255,255,0.9)', color: '#ef4444', border: 'none', padding: '0.5rem', borderRadius: '0.75rem', cursor: 'pointer', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              </div>
+              
+              <div style={{ padding: '1.5rem' }}>
+                <h4 style={{ fontWeight: 800, fontSize: '1.25rem', marginBottom: '1rem' }}>{crop.name}</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.875rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>{t.growthStage}</span>
+                    <span className="badge" style={{ background: '#f1f5f9', color: '#475569' }}>{crop.stage}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Health Status</span>
+                    <span className={`badge ${crop.health === 'Healthy' ? 'badge-success' : 'badge-danger'}`}>{crop.health}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {isModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="card fade-in" style={{ width: '100%', maxWidth: '500px', padding: '2rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 className="text-xl font-black">Add New Crop</h3>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none', border: 'none' }}><X size={24} /></button>
+            </div>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ textAlign: 'left' }}>
+                <label className="block text-sm font-bold mb-2">Crop Name</label>
+                <input 
+                  className="input" 
+                  type="text" 
+                  value={newCrop.name} 
+                  onChange={e => setNewCrop({...newCrop, name: e.target.value})} 
+                  placeholder="e.g. Red Tomatoes" 
+                  required 
+                />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ textAlign: 'left' }}>
+                  <label className="block text-sm font-bold mb-2">Growth Stage</label>
+                  <select className="input" value={newCrop.stage} onChange={e => setNewCrop({...newCrop, stage: e.target.value})}>
+                    <option>Sowing</option>
+                    <option>Growth</option>
+                    <option>Flowering</option>
+                    <option>Fruiting</option>
+                    <option>Harvesting</option>
+                  </select>
+                </div>
+                <div style={{ textAlign: 'left' }}>
+                  <label className="block text-sm font-bold mb-2">Health Status</label>
+                  <select className="input" value={newCrop.health} onChange={e => setNewCrop({...newCrop, health: e.target.value})}>
+                    <option>Healthy</option>
+                    <option>At Risk</option>
+                    <option>Diseased</option>
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem', background: '#f8fafc', borderRadius: '0.75rem' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#dcfce7', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Eye size={20} />
+                </div>
+                <p className="text-xs text-slate-500">
+                  Image will be automatically assigned based on the crop name (e.g., "Tomato", "Chilli", etc.)
+                </p>
+              </div>
+              <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }}>Add to Monitoring</button>
+            </form>
           </div>
         </div>
-      ))}
+      )}
     </div>
   );
 };
