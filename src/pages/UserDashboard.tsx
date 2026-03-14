@@ -141,11 +141,7 @@ const AIDetectionSection = () => {
       const result = res.data;
       setAiResult(result);
       
-      const issuesText = Array.isArray(result.issues) 
-        ? (result.issues.length > 0 ? result.issues.join(', ') : 'None') 
-        : (result.issues || 'None');
-        
-      const narration = `Analysis complete. Crop: ${result.crop}. Status: ${result.status}. ${issuesText === 'None' ? 'No issues detected.' : `Issues identified: ${issuesText}.`} Recommended actions: ${Array.isArray(result.recommended_actions) ? result.recommended_actions.join('. ') : result.recommended_actions}`;
+      const narration = `Analysis complete. Crop: ${result.crop_name}. Status: ${result.health_status}. ${result.disease_detected === 'None' ? 'No disease detected.' : `Disease identified: ${result.disease_detected}.`} Confidence: ${result.confidence_score}. Recommendation: ${result.farming_recommendation}`;
       speak(narration);
     } catch (err) {
       console.error("AI analysis failed", err);
@@ -206,43 +202,34 @@ const AIDetectionSection = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span className="text-sm font-bold text-slate-500 uppercase">Crop</span>
-                <span className="font-black text-slate-900">{aiResult.crop}</span>
+                <span className="text-sm font-bold text-slate-500 uppercase">Crop Name</span>
+                <span className="font-black text-slate-900">{aiResult.crop_name}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span className="text-sm font-bold text-slate-500 uppercase">Status</span>
-                <span className={`font-bold ${aiResult.status?.toLowerCase().includes('healthy') ? 'text-emerald-600' : 'text-orange-600'}`}>
-                  {aiResult.status}
+                <span className="text-sm font-bold text-slate-500 uppercase">Health Status</span>
+                <span className={`font-bold ${aiResult.health_status?.toLowerCase().includes('healthy') ? 'text-emerald-600' : 'text-orange-600'}`}>
+                  {aiResult.health_status}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span className="text-sm font-bold text-slate-500 uppercase">Issues</span>
-                <span className={`font-bold text-right ${(!aiResult.issues || (Array.isArray(aiResult.issues) && aiResult.issues.length === 0)) ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {Array.isArray(aiResult.issues) ? (aiResult.issues.length > 0 ? aiResult.issues.join(', ') : 'None') : (aiResult.issues || 'None')}
+                <span className="text-sm font-bold text-slate-500 uppercase">Disease Detected</span>
+                <span className={`font-bold text-right ${(!aiResult.disease_detected || aiResult.disease_detected === 'None') ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {aiResult.disease_detected || 'None'}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span className="text-sm font-bold text-slate-500 uppercase">Confidence</span>
-                <span className="font-bold text-primary">{aiResult.confidence}</span>
+                <span className="text-sm font-bold text-slate-500 uppercase">Confidence Score</span>
+                <span className="font-bold text-primary">{aiResult.confidence_score}</span>
               </div>
             </div>
 
             <div style={{ padding: '1.5rem', background: '#ecfdf5', borderRadius: '1.5rem', border: '1px solid #d1fae5' }}>
               <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em', marginBottom: '0.75rem', color: '#065f46' }}>
-                Recommended Actions
+                Farming Recommendation
               </p>
-              <div className="flex flex-col gap-2">
-                {Array.isArray(aiResult.recommended_actions) ? (
-                  aiResult.recommended_actions.map((action: string, idx: number) => (
-                    <div key={idx} className="flex gap-2 text-sm font-semibold text-emerald-800">
-                      <span>•</span>
-                      <span>{action}</span>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm font-semibold text-emerald-800">{aiResult.recommended_actions}</p>
-                )}
-              </div>
+              <p className="text-sm font-semibold text-emerald-800 leading-relaxed">
+                {aiResult.farming_recommendation}
+              </p>
             </div>
             
             <button className="btn btn-secondary" onClick={() => { setPreview(null); setAiResult(null); }}>

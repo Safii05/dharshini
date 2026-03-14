@@ -4,8 +4,11 @@ const fs = require('fs');
 const router = express.Router();
 
 module.exports = (upload) => {
-  router.post('/detect', upload.single('image'), async (req, res) => {
-    if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
+  router.post('/detect-crop', upload.single('image'), async (req, res) => {
+    if (!req.file) {
+      console.error("No file received in request");
+      return res.status(400).json({ error: 'No image uploaded' });
+    }
 
     const imagePath = req.file.path;
 
@@ -13,11 +16,11 @@ module.exports = (upload) => {
       if (!process.env.GEMINI_API_KEY) {
          console.warn("GEMINI_API_KEY is missing in .env. Falling back to mock response.");
          return res.json({
-           crop: "Maize",
-           status: "Healthy",
-           issues: [],
-           recommended_actions: ["Maintain current irrigation schedule."],
-           confidence: "94%"
+           crop_name: "Maize",
+           health_status: "Healthy",
+           disease_detected: "None",
+           confidence_score: "94%",
+           farming_recommendation: "Maintain current irrigation schedule and monitor for pests."
          });
       }
 
@@ -26,11 +29,11 @@ module.exports = (upload) => {
       const imageData = fs.readFileSync(imagePath);
       
       const parts = [
-        { text: "You are an AI crop health assistant. Inspect the uploaded crop image carefully. Identify any plant diseases, pest damage, or nutrient deficiencies. Return the result strictly as JSON with this schema: {\"crop\": \"name of the plant\", \"status\": \"Healthy or Unhealthy\", \"issues\": [\"list of problems\"], \"recommended_actions\": [\"list of farming steps\"]}. Do not include any text, explanations, or formatting outside the JSON." },
+        { text: "Analyze the crop image and return structured agricultural information. Identify the crop, its health condition, any visible disease, confidence level, and a recommended farming action. Return output STRICTLY in JSON format with these exact keys: crop_name, health_status, disease_detected, confidence_score, farming_recommendation." },
         { inlineData: { data: imageData.toString('base64'), mimeType: req.file.mimetype } }
       ];
 
-      console.log("AI Crop Health Assistant (Strict Schema) analyzing image...");
+      console.log("Analyzing crop image with Gemini Vision SDK...");
       const result = await model.generateContent(parts);
       const response = await result.response;
       let text = response.text();
@@ -45,20 +48,19 @@ module.exports = (upload) => {
       
       try {
         const jsonResult = JSON.parse(text);
-        if (!jsonResult.confidence) jsonResult.confidence = "High Precision";
         res.json(jsonResult);
       } catch (parseErr) {
-        console.error("Analysis parsing failed:", text);
+        console.error("JSON parsing failed. Raw response:", text);
         res.json({
-          crop: "Detected Plant",
-          status: "Analysis Complete",
-          issues: ["Unable to parse detailed diagnostic"],
-          recommended_actions: [text.substring(0, 200)],
-          confidence: "Manual Review Needed"
+          crop_name: "Unknown Plant",
+          health_status: "Analysis complete",
+          disease_detected: "N/A",
+          confidence_score: "N/A",
+          farming_recommendation: text.substring(0, 300)
         });
       }
     } catch (err) {
-      console.error("Gemini API Error:", err);
+      console.error("Gemini Vision API Error:", err);
       res.status(500).json({ error: 'AI analysis failed' });
     } finally {
       // Clean up uploaded file
