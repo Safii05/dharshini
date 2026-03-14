@@ -142,7 +142,7 @@ const AIDetectionSection = () => {
       const result = res.data;
       setAiResult(result);
       
-      const narration = `Analysis complete. Crop: ${result.crop}. Status: ${result.health}. ${result.disease === 'None' ? 'No disease detected.' : `Disease identified: ${result.disease}.`} Confidence: ${result.confidence}. Recommendation: ${result.suggestion}`;
+      const narration = `Analysis complete. Crop: ${result.crop}. Status: ${result.health}. ${result.disease === 'None' ? 'No disease detected.' : `Disease identified: ${result.disease}.`} Confidence: ${result.confidence}. Recommendation: ${result.recommendation}`;
       speak(narration);
     } catch (err) {
       console.error("AI analysis failed", err);
@@ -221,11 +221,11 @@ const AIDetectionSection = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span className="text-sm font-bold text-slate-500 uppercase">Crop Detected</span>
+                <span className="text-sm font-bold text-slate-500 uppercase">Crop</span>
                 <span className="font-black text-slate-900">{aiResult.crop}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span className="text-sm font-bold text-slate-500 uppercase">Health Status</span>
+                <span className="text-sm font-bold text-slate-500 uppercase">Health</span>
                 <span className={`font-bold ${aiResult.health.toLowerCase().includes('healthy') ? 'text-emerald-600' : 'text-orange-600'}`}>
                   {aiResult.health}
                 </span>
@@ -247,7 +247,7 @@ const AIDetectionSection = () => {
                 {t.suggestedAction}
               </p>
               <p style={{ fontWeight: 600, color: '#065f46', lineHeight: '1.5' }}>
-                {aiResult.suggestion}
+                {aiResult.recommendation}
               </p>
             </div>
             

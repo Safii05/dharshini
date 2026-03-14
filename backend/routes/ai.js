@@ -6,18 +6,17 @@ const router = express.Router();
 module.exports = (upload) => {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-  router.post('/detect-crop', upload.single('image'), async (req, res) => {
+  router.post('/detect', upload.single('image'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
 
     try {
       if (!process.env.GEMINI_API_KEY) {
-         // Fallback/Demo logic if no API key
          return res.json({
            crop: "Maize",
            health: "Healthy",
            disease: "None",
            confidence: "94%",
-           suggestion: "Crop is healthy. Maintain current irrigation schedule."
+           recommendation: "Crop is healthy. Maintain current irrigation schedule."
          });
       }
 
@@ -26,7 +25,7 @@ module.exports = (upload) => {
       const imageData = fs.readFileSync(imagePath);
       
       const parts = [
-        { text: "Analyze this agricultural crop image. Determine the crop name, health status (e.g., Healthy, Infected), identify specific disease (output 'None' if healthy), calculate confidence percentage, and provide a treatment suggestion. Format the response as a strict JSON object with these keys: crop, health, disease, confidence, suggestion." },
+        { text: "Analyze this agricultural crop image. Determine the crop name, health status, identify specific disease (output 'None' if healthy), calculate confidence percentage, and provide a treatment suggestion. Format the response as a strict JSON object with these keys: crop, health, disease, confidence, recommendation." },
         { inlineData: { data: imageData.toString('base64'), mimeType: req.file.mimetype } }
       ];
 
@@ -45,7 +44,7 @@ module.exports = (upload) => {
           health: "Analysis complete",
           disease: "Unknown",
           confidence: "70%",
-          suggestion: text
+          recommendation: text
         });
       }
     } catch (err) {
