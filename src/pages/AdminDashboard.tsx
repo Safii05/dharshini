@@ -77,19 +77,24 @@ const AdminDashboard = ({ onLogout }: Props) => {
     const fetchData = async () => {
       try {
         const [s, t, tk, c, inv] = await Promise.all([
-          getDashboardStats(),
-          getTrainees(),
-          getTasks(),
-          getCrops(),
-          getInventory()
+          getDashboardStats().catch(() => ({ data: null })),
+          getTrainees().catch(() => ({ data: [] })),
+          getTasks().catch(() => ({ data: [] })),
+          getCrops().catch(() => ({ data: [] })),
+          getInventory().catch(() => ({ data: [] }))
         ]);
+        
         setStats(s.data);
-        setTrainees(t.data);
-        setTasks(tk.data);
-        setCrops(c.data);
-        setInventory(inv.data);
+        setTrainees(t.data.length > 0 ? t.data : mockTrainees);
+        setTasks(tk.data.length > 0 ? tk.data : mockTasks);
+        setCrops(c.data.length > 0 ? c.data : mockCrops);
+        setInventory(inv.data.length > 0 ? inv.data : mockInventory);
       } catch (err) {
         console.error("Failed to fetch admin data", err);
+        setTrainees(mockTrainees);
+        setTasks(mockTasks);
+        setCrops(mockCrops);
+        setInventory(mockInventory);
       }
     };
     fetchData();
@@ -143,7 +148,7 @@ const AdminDashboard = ({ onLogout }: Props) => {
       setTrainees([...trainees, res.data]);
     } catch (err) {
       console.error("Failed to add trainee", err);
-      const id = (trainees.length + 1).toString().padStart(3, '0');
+      const id = Math.max(0, ...trainees.map(t => t.id || 0)) + 1;
       setTrainees([...trainees, { ...trainee, id, efficiency: '90%', status: 'Active' }]);
     }
   };
@@ -181,11 +186,11 @@ const AdminDashboard = ({ onLogout }: Props) => {
       userType="Admin"
     >
       {activePage === 'dashboard' && <AdminDashboardHome stats={stats} />}
-      {activePage === 'trainees' && <TraineesSection data={trainees.length > 0 ? trainees : mockTrainees} onAddTrainee={handleAddTrainee} onDeleteTrainee={handleDeleteTrainee} />}
-      {activePage === 'farmTask' && <FarmTaskSection data={tasks.length > 0 ? tasks : mockTasks} trainees={trainees.length > 0 ? trainees : mockTrainees} onUpdateTask={handleUpdateTaskStatus} onAddTask={handleAddTask} onDeleteTask={handleDeleteTask} />}
-      {activePage === 'cropMonitoring' && <CropMonitoringSection data={crops.length > 0 ? crops : mockCrops} />}
+      {activePage === 'trainees' && <TraineesSection data={trainees} onAddTrainee={handleAddTrainee} onDeleteTrainee={handleDeleteTrainee} />}
+      {activePage === 'farmTask' && <FarmTaskSection data={tasks} trainees={trainees} onUpdateTask={handleUpdateTaskStatus} onAddTask={handleAddTask} onDeleteTask={handleDeleteTask} />}
+      {activePage === 'cropMonitoring' && <CropMonitoringSection data={crops} />}
       {activePage === 'attendanceProduction' && <AttendanceProductionSection />}
-      {activePage === 'inventory' && <InventorySection data={inventory.length > 0 ? inventory : mockInventory} />}
+      {activePage === 'inventory' && <InventorySection data={inventory} />}
       {activePage === 'reports' && <ReportsSection />}
       {activePage === 'settings' && <AdminSettingsSection />}
     </DashboardLayout>

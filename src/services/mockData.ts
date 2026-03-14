@@ -1,9 +1,9 @@
 export const traineesData = [
-  { id: "001", name: "Arun Kumar", group: "Morning A", efficiency: "92%", status: "Active" },
-  { id: "002", name: "Priya S.", group: "Evening B", efficiency: "88%", status: "On Leave" },
-  { id: "003", name: "Karthik R.", group: "Morning A", efficiency: "95%", status: "Active" },
-  { id: "004", name: "Lakshmi M.", group: "Morning B", efficiency: "79%", status: "Training" },
-  { id: "005", name: "Rahul Dev", group: "Evening B", efficiency: "91%", status: "Active" },
+  { id: 1, name: "Arun Kumar", group: "Morning A", efficiency: "92%", status: "Active" },
+  { id: 2, name: "Priya S.", group: "Evening B", efficiency: "88%", status: "On Leave" },
+  { id: 3, name: "Karthik R.", group: "Morning A", efficiency: "95%", status: "Active" },
+  { id: 4, name: "Lakshmi M.", group: "Morning B", efficiency: "79%", status: "Training" },
+  { id: 5, name: "Rahul Dev", group: "Evening B", efficiency: "91%", status: "Active" },
 ];
 
 export const tasksData = [
