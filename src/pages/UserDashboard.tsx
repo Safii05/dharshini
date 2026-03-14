@@ -141,7 +141,7 @@ const AIDetectionSection = () => {
       const result = res.data;
       setAiResult(result);
       
-      const narration = `Analysis complete. Crop: ${result.crop}. Status: ${result.health}. ${result.disease === 'None' ? 'No disease detected.' : `Disease identified: ${result.disease}.`} Confidence: ${result.confidence}. Recommendation: ${result.recommendation}`;
+      const narration = `Analysis complete. Crop: ${result.crop}. Status: ${result.status}. ${result.issues === 'None' ? 'No issues detected.' : `Issues identified: ${result.issues}.`} Recommended actions: ${Array.isArray(result.recommended_actions) ? result.recommended_actions.join('. ') : result.recommended_actions}`;
       speak(narration);
     } catch (err) {
       console.error("AI analysis failed", err);
@@ -206,15 +206,15 @@ const AIDetectionSection = () => {
                 <span className="font-black text-slate-900">{aiResult.crop}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span className="text-sm font-bold text-slate-500 uppercase">Health</span>
-                <span className={`font-bold ${aiResult.health.toLowerCase().includes('healthy') ? 'text-emerald-600' : 'text-orange-600'}`}>
-                  {aiResult.health}
+                <span className="text-sm font-bold text-slate-500 uppercase">Status</span>
+                <span className={`font-bold ${aiResult.status?.toLowerCase().includes('healthy') ? 'text-emerald-600' : 'text-orange-600'}`}>
+                  {aiResult.status}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                <span className="text-sm font-bold text-slate-500 uppercase">Disease</span>
-                <span className={`font-bold ${aiResult.disease === 'None' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                  {aiResult.disease}
+                <span className="text-sm font-bold text-slate-500 uppercase">Issues</span>
+                <span className={`font-bold ${aiResult.issues === 'None' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                  {aiResult.issues}
                 </span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -225,11 +225,20 @@ const AIDetectionSection = () => {
 
             <div style={{ padding: '1.5rem', background: '#ecfdf5', borderRadius: '1.5rem', border: '1px solid #d1fae5' }}>
               <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', fontWeight: 800, letterSpacing: '0.05em', marginBottom: '0.75rem', color: '#065f46' }}>
-                {t.suggestedAction}
+                Recommended Actions
               </p>
-              <p style={{ fontWeight: 600, color: '#065f46', lineHeight: '1.5' }}>
-                {aiResult.recommendation}
-              </p>
+              <div className="flex flex-col gap-2">
+                {Array.isArray(aiResult.recommended_actions) ? (
+                  aiResult.recommended_actions.map((action: string, idx: number) => (
+                    <div key={idx} className="flex gap-2 text-sm font-semibold text-emerald-800">
+                      <span>•</span>
+                      <span>{action}</span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm font-semibold text-emerald-800">{aiResult.recommended_actions}</p>
+                )}
+              </div>
             </div>
             
             <button className="btn btn-secondary" onClick={() => { setPreview(null); setAiResult(null); }}>

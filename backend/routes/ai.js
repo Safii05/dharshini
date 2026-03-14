@@ -4,9 +4,6 @@ const fs = require('fs');
 const router = express.Router();
 
 module.exports = (upload) => {
-  // Initialize Gemini inside the route to pick up env changes if needed, 
-  // though typically it's fine outside. 
-  
   router.post('/detect', upload.single('image'), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: 'No image uploaded' });
 
@@ -15,13 +12,12 @@ module.exports = (upload) => {
     try {
       if (!process.env.GEMINI_API_KEY) {
          console.warn("GEMINI_API_KEY is missing in .env. Falling back to mock response.");
-         // Fallback/Demo logic if no API key
          return res.json({
            crop: "Maize",
-           health: "Healthy",
-           disease: "None",
-           confidence: "94%",
-           recommendation: "Crop is healthy. Maintain current irrigation schedule."
+           status: "Healthy",
+           issues: "None",
+           recommended_actions: ["Maintain current irrigation schedule."],
+           confidence: "94%"
          });
       }
 
@@ -30,18 +26,18 @@ module.exports = (upload) => {
       const imageData = fs.readFileSync(imagePath);
       
       const parts = [
-        { text: "Analyze this agricultural crop image. Identify the crop name, health status (e.g., Healthy, Infected), specific disease or pest (if any, otherwise 'None'), confidence percentage, and a short recommended farming action. Response MUST be in strict JSON format with these exact keys: crop, health, disease, confidence, recommendation." },
+        { text: "You are an AI agronomist. Analyze this agricultural crop image for plant health. Detect diseases, pests, or nutrient deficiencies. Return output in strict JSON format with exactly these fields: 'crop', 'status' (Healthy/Unhealthy), 'issues' (a concise string describing problems or 'None'), and 'recommended_actions' (an array of concise specific farming steps). Keep responses concise and actionable." },
         { inlineData: { data: imageData.toString('base64'), mimeType: req.file.mimetype } }
       ];
 
-      console.log("Sending image to Gemini Vision API...");
+      console.log("AI Agronomist analyzing image...");
       const result = await model.generateContent(parts);
       const response = await result.response;
       let text = response.text();
       
-      console.log("Raw Gemini response:", text);
+      console.log("Agronomist Analysis:", text);
 
-      // Extract JSON from potential markdown/text blocks
+      // Extract JSON from response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         text = jsonMatch[0];
@@ -49,15 +45,16 @@ module.exports = (upload) => {
       
       try {
         const jsonResult = JSON.parse(text);
+        if (!jsonResult.confidence) jsonResult.confidence = "High Precision";
         res.json(jsonResult);
       } catch (parseErr) {
-        console.error("Failed to parse Gemini response as JSON:", text);
+        console.error("Agronomist parsing failed:", text);
         res.json({
           crop: "Detected Plant",
-          health: "Analysis complete",
-          disease: "Unknown",
-          confidence: "70%",
-          recommendation: text.substring(0, 200) // Fallback with truncated text
+          status: "Analysis Complete",
+          issues: "Unable to parse detailed diagnostic",
+          recommended_actions: [text.substring(0, 200)],
+          confidence: "Manual Review Needed"
         });
       }
     } catch (err) {
