@@ -392,20 +392,32 @@ const ModulesSection = ({ data }: any) => {
       recognitionRef.current.interimResults = false;
       recognitionRef.current.lang = 'en-US';
 
+      recognitionRef.current.maxAlternatives = 1;
+
       recognitionRef.current.onresult = (event: any) => {
         const last = event.results.length - 1;
         const result = event.results[last][0].transcript.toLowerCase().trim();
         setQuizTranscript(result);
         
-        const optionMatch = result.match(/option\s*(1|one|2|two|3|three|4|four)/i);
-        if (optionMatch) {
-          const val = optionMatch[1];
-          const map: any = { '1': 0, 'one': 0, '2': 1, 'two': 1, '3': 2, 'three': 2, '4': 3, 'four': 3 };
-          const idx = map[val];
+        // Strict command matching
+        const optionMap: Record<string, number> = {
+          'option 1': 0, 'option one': 0,
+          'option 2': 1, 'option two': 1,
+          'option 3': 2, 'option three': 2,
+          'option 4': 3, 'option four': 3
+        };
+
+        if (optionMap[result] !== undefined) {
+          const idx = optionMap[result];
           const q = data[step];
           if (q && q.options[idx] !== undefined) {
             speak(`Option ${idx + 1} selected.`);
             setTimeout(() => handleAnswer(idx === q.correct), 1000);
+          }
+        } else {
+          // If the recognition caught something but it doesn't match a valid quiz command
+          if (result.length > 0) {
+            speak("Please say Option 1, Option 2, Option 3, or Option 4.");
           }
         }
       };
