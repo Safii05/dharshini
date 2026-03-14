@@ -18,22 +18,14 @@ module.exports = (upload) => {
     }
 
     const imagePath = req.file.path;
-    
-    // Fallback result function
-    const sendFallback = (msg) => {
-      return {
-        cropName: "Tomato (Fallback)",
-        healthStatus: "Healthy",
-        possibleDisease: "None",
-        confidence: "80%",
-        recommendation: "Ensure regular watering and balanced fertilization. " + (msg || "")
-      };
-    };
+
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("[Backend] GEMINI_API_KEY is missing.");
+      return res.status(400).json({ error: "Missing GEMINI_API_KEY in .env file." });
+    }
 
     try {
-      if (!process.env.GEMINI_API_KEY) {
-        throw new Error("Missing GEMINI_API_KEY in .env file.");
-      }
+      console.log("[Backend] GEMINI_API_KEY check: Present (Verified)");
 
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -41,7 +33,7 @@ module.exports = (upload) => {
       const imageData = fs.readFileSync(imagePath);
       const base64Image = imageData.toString('base64');
 
-      const prompt = "Analyze this crop image. Identify the crop name, its health status (Healthy/Unhealthy), any visible disease, an estimated confidence level, and a short farming recommendation. Return the result strictly as a JSON object with these keys: cropName, healthStatus, possibleDisease, confidence, recommendation. Do not include any extra text or markdown formatting.";
+      const prompt = "Analyze this crop image. Identify the crop name, its health status (Healthy/Unhealthy), any visible disease, an estimated confidence level, and a short farming recommendation. Return the result strictly as a JSON object with these keys: cropName, healthStatus, disease, confidence, recommendation. Do not include any extra text or markdown formatting.";
 
       const result = await model.generateContent([
         prompt,
@@ -76,7 +68,7 @@ module.exports = (upload) => {
       const standardized = {
         cropName: analysisData.cropName || "Unknown",
         healthStatus: analysisData.healthStatus || "Unknown",
-        possibleDisease: analysisData.possibleDisease || "None",
+        disease: analysisData.disease || analysisData.possibleDisease || "None",
         confidence: analysisData.confidence || "70%",
         recommendation: analysisData.recommendation || "Consult a local agronomist."
       };
@@ -86,7 +78,7 @@ module.exports = (upload) => {
 
     } catch (err) {
       console.error("[Backend] Analysis Error:", err.message);
-      res.json(sendFallback(err.message));
+      res.status(500).json({ error: "AI analysis failed: " + err.message });
     } finally {
       if (fs.existsSync(imagePath)) {
         fs.unlink(imagePath, (err) => {

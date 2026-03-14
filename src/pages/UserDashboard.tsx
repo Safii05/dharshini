@@ -144,30 +144,23 @@ const AIDetectionSection = () => {
       
       const data = res.data;
       
-      // Force all fields to have a string value to avoid blank UI
+      // Map JSON fields from backend to UI state
       setAnalysisResult({
-        cropName: data.cropName || "Analysis Pending",
-        healthStatus: data.healthStatus || "Monitoring",
-        possibleDisease: data.possibleDisease || "None Detected",
-        confidence: data.confidence || "Processing",
-        recommendation: data.recommendation || "Maintain standard care."
+        cropName: data.cropName,
+        healthStatus: data.healthStatus,
+        disease: data.disease,
+        confidence: data.confidence,
+        recommendation: data.recommendation
       });
       console.log("[Frontend] State updated with Analysis Result.");
       
-      const narration = `Analysis complete. Crop: ${data.cropName}. Status: ${data.healthStatus}. Disease: ${data.possibleDisease}. Confidence: ${data.confidence}.`;
+      const narration = `Analysis complete. Crop: ${data.cropName}. Status: ${data.healthStatus}. Disease: ${data.disease}. Confidence: ${data.confidence}.`;
       speak(narration);
-    } catch (err) {
+    } catch (err: any) {
       console.error("[Frontend] API Error:", err);
-      // Local fallback if server/network is completely down
-      const fallbackData = {
-        cropName: "Tomato (Manual Mode)",
-        healthStatus: "Healthy",
-        possibleDisease: "None",
-        confidence: "90%",
-        recommendation: "System connection interrupted. Based on cached patterns, ensure standard irrigation."
-      };
-      setAnalysisResult(fallbackData);
-      speak(`System connection lost. Displaying estimated results for ${fallbackData.cropName}`);
+      const errorMsg = err.response?.data?.error || "AI analysis failed. Please check your image and try again.";
+      speak(errorMsg);
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -250,8 +243,8 @@ const AIDetectionSection = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-tighter mb-1">Possible Disease</span>
-                  <span className={`font-bold pl-2 border-l-4 ${(analysisResult.possibleDisease?.toLowerCase() === 'none' || !analysisResult.possibleDisease) ? 'text-emerald-600 border-emerald-500' : 'text-rose-600 border-rose-500'}`} id="res-disease">
-                    {analysisResult.possibleDisease}
+                  <span className={`font-bold pl-2 border-l-4 ${(analysisResult.disease?.toLowerCase() === 'none' || !analysisResult.disease) ? 'text-emerald-600 border-emerald-500' : 'text-rose-600 border-rose-500'}`} id="res-disease">
+                    {analysisResult.disease}
                   </span>
                 </div>
                 <div className="flex flex-col">
